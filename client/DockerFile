@@ -1,0 +1,28 @@
+FROM node:22-alpine AS builder
+
+WORKDIR /aurora/client
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
+
+
+
+
+FROM node:22-alpine AS runnner
+
+WORKDIR /aurora/client
+
+COPY --from=builder /aurora/client/.next ./next
+
+COPY package*.json ./
+
+RUN npm install
+
+EXPOSE 4000
+
+CMD [ "npm", "run", "dev" ]

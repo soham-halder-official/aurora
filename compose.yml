@@ -1,0 +1,96 @@
+version: '3.9'
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "8080:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - client
+      - admin
+      - server
+    networks:
+      - app-network
+
+  client:
+    build:
+      context: ./client
+      dockerfile: DockerFile
+    container_name: client
+    image: aurora-client:latest
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - server
+    networks:
+      - app-network
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: DockerFile
+    container_name: admin
+    image: aurora-admin:latest
+    ports:
+      - "6000:6000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - server
+    networks:
+      - app-network
+
+  server:
+    build:
+      context: ./server
+      dockerfile: DockerFile
+    container_name: server
+    image: aurora-server:latest
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://postgres:Soham@12345@database:5432/aurora
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - database
+      - redis
+    networks:
+      - app-network
+
+  database:
+    image: postgres:latest
+    container_name: database
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: aurora
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

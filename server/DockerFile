@@ -1,0 +1,23 @@
+# Build Stage
+FROM node:22-alpine AS builder
+
+WORKDIR /aurora/server
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+# Runner Stage
+FROM node:22-alpine AS runner
+
+WORKDIR /aurora/server
+
+COPY --from=builder /aurora/server/dist ./dist
+COPY --from=builder /aurora/server/node_modules ./node_modules
+COPY package*.json ./
+
+EXPOSE 5000
+
+CMD ["npm", "run", "start"]
